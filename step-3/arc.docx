@@ -1,0 +1,87 @@
+Architecture goals
+
+Secure: TLS, firewalls, private networks, least privilege.
+
+Scalable: each component can scale independently.
+
+Cost-effective: avoid overprovisioning, use managed services where it reduces ops overhead.
+
+Components
+
+Load Balancer / Reverse Proxy (Nginx or HAProxy): distributes requests.
+
+Web (Nginx): serves static assets and forwards PHP requests.
+
+PHP-FPM: runs Laravel. Multiple replicas behind LB.
+
+Redis: cache + queue. Single node for dev; cluster for prod.
+
+MySQL: primary + replica(s). Async replication for reads.
+
+Elasticsearch/OpenSearch: for search and indexing. Clustered for resilience.
+
+Deployment topology
+
+1–2 VMs: Load balancers.
+
+2–3 VMs: App nodes (Nginx + PHP-FPM in containers).
+
+1 VM: MySQL primary (+ replica later if needed).
+
+1 VM: Redis.
+
+2–3 VMs: Elasticsearch nodes (master + data roles).
+
+Scaling strategy
+
+Web/PHP-FPM: horizontal scaling (add more replicas).
+
+Redis: scale with cluster or sentinel.
+
+MySQL: vertical scaling first, then replicas.
+
+Elasticsearch: add nodes for capacity.
+
+Security practices
+
+Only LB exposed publicly.
+
+TLS termination at LB.
+
+Private network for DB/Redis/ES.
+
+Docker secrets or Vault for sensitive env vars.
+
+Non-root containers.
+
+Automated updates + image scanning.
+
+Backups & DR
+
+MySQL: regular dumps/XtraBackup → offsite storage.
+
+Redis: snapshot (RDB/AOF) to remote storage.
+
+Elasticsearch: snapshots to S3-compatible store.
+
+Uploads: offload to S3/minio.
+
+Test restores regularly.
+
+Monitoring & Logging
+
+Metrics: Prometheus + exporters for PHP-FPM, MySQL, Redis, ES.
+
+Visualization: Grafana.
+
+Logs: centralize with ELK or hosted log service.
+
+Cost saving tips
+
+Start small (1–2 app nodes, 1 DB, 1 Redis, 2 ES nodes).
+
+Use auto-scaling only where load fluctuates.
+
+Use spot/preemptible for background jobs.
+
+Prefer managed DB/Redis/ES if operational overhead > infra cost.

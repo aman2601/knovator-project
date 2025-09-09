@@ -1,0 +1,61 @@
+stages:
+  - test
+  - build
+  - deploy
+
+# run every job on your runner tagged `ec2`
+default:
+  tags:
+    - ec2
+
+variables:
+  DOCKER_DRIVER: overlay2
+  IMAGE_BACKEND: "$CI_REGISTRY_IMAGE/backend"
+  IMAGE_FRONTEND: "$CI_REGISTRY_IMAGE/frontend"
+
+runner-check:
+  stage: test
+  script:
+    - echo 'Runner is online as:'
+    - docker version
+    - docker ps
+
+build-backend:
+  stage: build
+  before_script:
+    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token "$CI_REGISTRY" --password-stdin
+  script:
+    - docker build -t "$IMAGE_BACKEND:$CI_COMMIT_SHORT_SHA" -t "$IMAGE_BACKEND:latest" ./backend
+    - docker push "$IMAGE_BACKEND:$CI_COMMIT_SHORT_SHA"
+    - docker push "$IMAGE_BACKEND:latest"
+  rules:
+    - if: $CI_COMMIT_BRANCH
+
+build-frontend:
+  stage: build
+  needs: ["build-backend"]
+  before_script:
+    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token "$CI_REGISTRY" --password-stdin
+  script:
+    - docker build -t "$IMAGE_FRONTEND:$CI_COMMIT_SHORT_SHA" -t "$IMAGE_FRONTEND:latest" ./frontend
+    - docker push "$IMAGE_FRONTEND:$CI_COMMIT_SHORT_SHA"
+    - docker push "$IMAGE_FRONTEND:latest"
+  rules:
+    - if: $CI_COMMIT_BRANCH
+
+deploy:
+  stage: deploy
+  needs: ["build-frontend"]
+  variables:
+    BACKEND_IMAGE: "$IMAGE_BACKEND:$CI_COMMIT_SHORT_SHA"
+    FRONTEND_IMAGE: "$IMAGE_FRONTEND:$CI_COMMIT_SHORT_SHA"
+  script:
+    - docker login -u gitlab-ci-token -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
+    - docker-compose pull
+    - docker-compose up -d --remove-orphans
+    - docker image prune -f
+  environment:
+    name: production
+    url: "http://$EC2_PUBLIC_IP"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
