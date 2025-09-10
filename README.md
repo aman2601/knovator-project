@@ -93,25 +93,6 @@ Frontend (React): http://localhost
 Backend (Node.js): http://localhost/api
 
 
-🛠️ Useful Commands
-
-Stop services:
-```
-docker-compose down
-```
-
-View logs:
-```
-docker-compose logs -f
-```
-
-Rebuild images:
-```
-docker-compose build --no-cache
-
-```
-
-
 
 --------------------------------------------------------
 

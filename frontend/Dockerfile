@@ -1,5 +1,5 @@
 # Stage 1: Build stage
-FROM ubuntu:20.04 AS builder
+FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
